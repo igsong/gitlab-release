@@ -38,9 +38,7 @@ class GitlabRelease:
     def fetch_all_env(self):
         env = {
             'CI_PROJECT_URL': '',
-            'CI_PROJECT_ID': '',
-            'GITLAB_ACCESS_TOKEN': "You must specifiy the private token linked to your GitLab account.\n"
-                                   'You probably need to add a GITLAB_ACCESS_TOKEN variable to your project.',
+            'CI_PROJECT_ID': ''
         }
         for var, msg in env.items():
             self.fetch_env_var(var, msg)
@@ -66,7 +64,6 @@ class GitlabRelease:
         res = self.request(method, url, headers=headers, json=body)
         return res.json()
 
-
     def fetch_release(self):
         url = '/'.join((self.api_project_url, 'repository/tags', self.get_tag()))
         res = self.request('get', url)
@@ -75,11 +72,19 @@ class GitlabRelease:
     def request(self, method, url, **kwargs):
         if 'headers' not in kwargs:
             kwargs['headers'] = {}
-        kwargs['headers']['PRIVATE-TOKEN'] = self.env['GITLAB_ACCESS_TOKEN']
+
+        if 'GITLAB_ACCESS_TOKEN' in os.environ:
+            kwargs['headers']['PRIVATE-TOKEN'] = os.environ['GITLAB_ACCESS_TOKEN']
+        elif 'CI_JOB_TOKEN' in os.environ:
+            kwargs['auth'] = ('gitlab-ci-token', os.environ['CI_JOB_TOKEN'])
+        else:
+            raise GitlabReleaseError('GITLAB_ACCESS_TOKEN or CI_JOB_TOKEN must be set')
+
         if self.debug:
             print(url)
             if 'body' in kwargs['headers']:
                 print(kwargs['headers']['body'])
+
         res = requests.request(method, url, **kwargs)
         res.raise_for_status()
         if self.debug:
