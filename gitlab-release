@@ -74,10 +74,7 @@ class GitlabRelease:
         if 'headers' not in kwargs:
             kwargs['headers'] = {}
 
-        if 'CI_JOB_TOKEN' in os.environ:
-            print ("use ci job token")
-            kwargs['auth'] = HTTPBasicAuth('gitlab-ci-token', os.environ['CI_JOB_TOKEN'])
-        elif 'GITLAB_ACCESS_TOKEN' in os.environ:
+        if 'GITLAB_ACCESS_TOKEN' in os.environ:
             print ("use private access token")
             kwargs['headers']['PRIVATE-TOKEN'] = os.environ['GITLAB_ACCESS_TOKEN']
         else:
